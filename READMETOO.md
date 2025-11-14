@@ -78,7 +78,8 @@ echo "Server started"
 | Feature | How To Use |
 | --- | ---|
 | Search n Range | Enter start_n and end_n  |
-| Filter Components | Type: any int a; any ordered pair (a, b); wildcards supported (e.g. (a, *))| 
+| Filter Components | Type: any int a; any ordered pair (a, b); wildcards supported via blank space (e.g. (a, ))| 
 |Exact Match |Check box → must have only listed components |
 | Generate Graph | Click button (only for n ≤ 5500) | 
+
 | Export CSV | Click Download CSV to download the full database as a .csv file |
