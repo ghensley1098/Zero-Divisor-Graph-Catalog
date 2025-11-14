@@ -1,0 +1,1161 @@
+<!-- client_frontend.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zero Divisor Graph Catalog</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/vis-network.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .server-info {
+            background: #e7f3ff;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #667eea;
+        }
+        
+        .filters {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .filter-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #555;
+        }
+        
+        input, select {
+            padding: 0.75rem;
+            border: 2px solid #e1e1e1;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 1rem;
+        }
+        
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .results {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .results-header {
+            padding: 1rem 1.5rem;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e1e1e1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e1e1e1;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #555;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .component-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: #e9ecef;
+            border-radius: 3px;
+            font-size: 0.875rem;
+            margin: 0.1rem;
+        }
+        
+        .type-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .badge-complete {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-bipartite {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+        
+        .graph-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        
+        .graph-modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            max-width: 1200px;
+            max-height: 90%;
+            overflow: auto;
+            width: 95%;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+        
+        .connection-status {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.875rem;
+            margin-left: 1rem;
+        }
+        
+        .status-connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .graph-container {
+            margin: 1rem 0;
+            border: 1px solid #e1e1e1;
+            border-radius: 5px;
+            padding: 1rem;
+            background: white;
+        }
+        
+        .graph-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        
+        .graph-network {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #e1e1e1;
+            border-radius: 3px;
+        }
+        
+        .graph-tabs {
+            display: flex;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #e1e1e1;
+        }
+        
+        .graph-tab {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            margin-right: 0.5rem;
+            border-radius: 3px 3px 0 0;
+            background: #f8f9fa;
+        }
+        
+        .graph-tab.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .graph-tab:hover {
+            background: #5a6fd8;
+            color: white;
+        }
+        
+        .graph-tab-content {
+            display: none;
+        }
+        
+        .graph-tab-content.active {
+            display: block;
+        }
+        
+        .graph-info {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .self-loop-node {
+            background-color: #ffb347 !important;
+            border-color: #ff9500 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Zero Divisor Graph Catalog</h1>
+            <p class="subtitle">Explore exact zero divisor components for modular arithmetic rings Z_n</p>
+            <div class="server-info">
+                <strong>Server:</strong> ISD2-80816.floridapoly.org:5000
+                <span id="connectionStatus" class="connection-status status-disconnected">Disconnected</span>
+            </div>
+        </header>
+        
+        <div class="filters">
+            <div class="filter-group">
+                <div class="filter-item">
+                    <label for="startN">Start n:</label>
+                    <input type="number" id="startN" value="1" min="1">
+                </div>
+                <div class="filter-item">
+                    <label for="endN">End n:</label>
+                    <input type="number" id="endN" value="100" min="1">
+                </div>
+                <div class="filter-item">
+                    <label for="components">Components (comma-separated):</label>
+                    <input type="text" id="components" placeholder="e.g., 4, (1,2), (2,8)">
+                </div>
+            </div>
+            
+            <div class="filter-group">
+                <div class="filter-item">
+                    <label for="componentType">Component Type:</label>
+                    <select id="componentType">
+                        <option value="">Any</option>
+                        <option value="complete">Complete Only</option>
+                        <option value="bipartite">Bipartite Only</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="exactMatch">
+                        <label for="exactMatch">Exact component match only</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="actions">
+				<button class="btn-secondary" onclick="resetFilters()">Reset Filters</button>
+				<button class="btn-primary" onclick="loadEntries()">Search</button>
+				<button class="btn-success" onclick="exportCSV()" title="Export all data to CSV">Export CSV</button>
+			</div>
+        </div>
+        
+        <div class="results">
+            <div class="results-header">
+                <h3>Results</h3>
+                <span id="resultCount">0 entries found</span>
+            </div>
+            <div class="table-container">
+                <table id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>n</th>
+                            <th>Exact Components</th>
+                            <th>Component Types</th>
+                            <th>Partitions</th>
+                            <th>Zero Vertices</th>
+                            <th>Zero Edges</th>
+                            <th>Exact Vertices</th>
+                            <th>Exact Edges</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                        <!-- Results will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="loading" class="loading" style="display: none;">
+                Loading entries...
+            </div>
+        </div>
+    </div>
+    
+    <div id="graphModal" class="graph-modal">
+        <div class="graph-modal-content">
+            <button class="close-modal" onclick="closeGraphModal()">&times;</button>
+            <h3 id="graphTitle">Graphs for Z_<span id="graphNValue"></span></h3>
+            <div class="graph-tabs">
+                <div class="graph-tab active" onclick="switchGraphTab('zero')">Zero Divisor Graph</div>
+                <div class="graph-tab" onclick="switchGraphTab('exact')">Exact Zero Divisor Graph</div>
+            </div>
+            <div id="graphContent">
+                <div id="zeroGraphTab" class="graph-tab-content active">
+                    <div class="graph-container">
+                        <div class="graph-title">Zero Divisor Graph Γ(Z_<span id="zeroGraphN"></span>)</div>
+                        <div id="zeroGraphNetwork" class="graph-network"></div>
+                    </div>
+                    <div class="graph-info">
+                        <p><strong>Note:</strong> Self-loop vertices are colored orange. Regular vertices are blue.</p>
+                    </div>
+                </div>
+                <div id="exactGraphTab" class="graph-tab-content">
+                    <div class="graph-container">
+                        <div class="graph-title">Exact Zero Divisor Graph for Z_<span id="exactGraphN"></span></div>
+                        <div id="exactGraphNetwork" class="graph-network"></div>
+                    </div>
+                    <div class="graph-info">
+                        <p><strong>Note:</strong> Self-loop vertices are colored orange. Regular vertices are green.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const SERVER_BASE_URL = 'http://localhost:5000';
+        let currentEntries = [];
+        let currentGraphData = null;
+
+        // Check server connection on page load
+        async function checkServerConnection() {
+            const statusElement = document.getElementById('connectionStatus');
+            try {
+                const response = await fetch(`${SERVER_BASE_URL}/api/health`);
+                if (response.ok) {
+                    statusElement.textContent = 'Connected';
+                    statusElement.className = 'connection-status status-connected';
+                } else {
+                    throw new Error('Server not responding properly');
+                }
+            } catch (error) {
+                statusElement.textContent = 'Disconnected';
+                statusElement.className = 'connection-status status-disconnected';
+                console.error('Server connection failed:', error);
+            }
+        }
+		
+		function exportCSV() {
+			const exportBtn = event.target;
+			const originalText = exportBtn.textContent;
+			
+			exportBtn.textContent = 'Exporting...';
+			exportBtn.disabled = true;
+			
+			fetch(`${SERVER_BASE_URL}/api/export/csv`)
+				.then(response => {
+					if (!response.ok) {
+						throw new Error(`Export failed: ${response.status}`);
+					}
+					return response.blob();
+				})
+				.then(blob => {
+					// Create download link
+					const url = window.URL.createObjectURL(blob);
+					const a = document.createElement('a');
+					a.style.display = 'none';
+					a.href = url;
+					a.download = 'zero_divisor_catalog.csv';
+					document.body.appendChild(a);
+					a.click();
+					window.URL.revokeObjectURL(url);
+					document.body.removeChild(a);
+				})
+				.catch(error => {
+					showError('Export failed: ' + error.message);
+				})
+				.finally(() => {
+					exportBtn.textContent = originalText;
+					exportBtn.disabled = false;
+				});
+		}
+        
+        function loadEntries() {
+            const startN = document.getElementById('startN').value;
+            const endN = document.getElementById('endN').value;
+            const components = document.getElementById('components').value;
+            const componentType = document.getElementById('componentType').value;
+            const exactMatch = document.getElementById('exactMatch').checked;
+            
+            const loading = document.getElementById('loading');
+            const resultsBody = document.getElementById('resultsBody');
+            const resultCount = document.getElementById('resultCount');
+            
+            loading.style.display = 'block';
+            resultsBody.innerHTML = '';
+            
+            const params = new URLSearchParams({
+                start_n: startN,
+                end_n: endN,
+                components: components,
+                component_type: componentType,
+                exact_match: exactMatch
+            });
+            
+            fetch(`${SERVER_BASE_URL}/api/entries?${params}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Server error: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    loading.style.display = 'none';
+                    
+                    if (data.success) {
+                        currentEntries = data.entries;
+                        displayEntries(currentEntries);
+                        resultCount.textContent = `${data.total} entries found`;
+                    } else {
+                        showError(data.error);
+                    }
+                })
+                .catch(error => {
+                    loading.style.display = 'none';
+                    showError('Failed to connect to server: ' + error.message);
+                });
+        }
+        
+        function displayEntries(entries) {
+            const resultsBody = document.getElementById('resultsBody');
+            
+            if (entries.length === 0) {
+                resultsBody.innerHTML = `
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 2rem;">
+                            No entries found matching your criteria
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            resultsBody.innerHTML = entries.map(entry => `
+                <tr>
+                    <td><strong>Z<sub>${entry.n}</sub></strong></td>
+                    <td>
+                        ${entry.exact_components.split(',').map(comp => 
+                            `<span class="component-badge">${comp.trim()}</span>`
+                        ).join('')}
+                    </td>
+                    <td>
+                        ${entry.has_complete ? '<span class="type-badge badge-complete">Complete</span>' : ''}
+                        ${entry.has_bipartite ? '<span class="type-badge badge-bipartite">Bipartite</span>' : ''}
+                    </td>
+                    <td>${entry.partition_count}</td>
+                    <td>${entry.zvertices_count}</td>
+                    <td>${entry.zedges_count}</td>
+                    <td>${entry.ezvertices_count}</td>
+                    <td>${entry.ezedges_count}</td>
+                    <td>
+                        <button class="btn-success" 
+                                onclick="generateGraph(${entry.n})"
+                                ${entry.can_generate_graph ? '' : 'disabled'}
+                                title="${entry.can_generate_graph ? 'Generate graph' : 'Graph not available for n > 5500'}">
+                            Generate Graph
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+		function generateGraph(n) {
+			const modal = document.getElementById('graphModal');
+			const graphNValue = document.getElementById('graphNValue');
+			
+			graphNValue.textContent = n;
+			document.getElementById('zeroGraphN').textContent = n;
+			document.getElementById('exactGraphN').textContent = n;
+			
+			// Clear previous graph content and show loading
+			document.getElementById('zeroGraphNetwork').innerHTML = '<p>Loading zero divisor graph...</p>';
+			document.getElementById('exactGraphNetwork').innerHTML = '<p>Loading exact zero divisor graph...</p>';
+			
+			modal.style.display = 'block';
+			
+			fetch(`${SERVER_BASE_URL}/api/graph/${n}`)
+				.then(response => {
+					if (!response.ok) {
+						throw new Error(`Server error: ${response.status}`);
+					}
+					return response.json();
+				})
+				.then(data => {
+					if (data.success) {
+						currentGraphData = data.data;
+						renderGraphs(data.data);
+					} else {
+						document.getElementById('zeroGraphNetwork').innerHTML = `<div class="error">${data.error}</div>`;
+						document.getElementById('exactGraphNetwork').innerHTML = `<div class="error">${data.error}</div>`;
+					}
+				})
+				.catch(error => {
+					document.getElementById('zeroGraphNetwork').innerHTML = `<div class="error">Failed to load graph: ${error.message}</div>`;
+					document.getElementById('exactGraphNetwork').innerHTML = `<div class="error">Failed to load graph: ${error.message}</div>`;
+				});
+		}
+        
+        function renderGraphs(graphData) {
+            // Render zero divisor graph
+            renderGraph('zero', graphData.zero_divisor_graph, 'lightblue');
+            // Render exact zero divisor graph
+            renderGraph('exact', graphData.exact_zero_divisor_graph, 'lightgreen');
+            
+            // Show the zero divisor graph tab by default
+            switchGraphTab('zero');
+        }
+        
+function renderGraph(type, structureData, defaultColor) {
+    const containerId = `${type}GraphNetwork`;
+    const container = document.getElementById(containerId);
+    
+    if (!container) {
+        console.error(`Container ${containerId} not found`);
+        return;
+    }
+    
+    // Check if vis is available
+    if (typeof vis === 'undefined') {
+        container.innerHTML = '<div class="error">Graph library failed to load. Please refresh the page.</div>';
+        console.error('vis.js library not loaded');
+        return;
+    }
+    
+    if (!structureData || structureData === '0') {
+        container.innerHTML = '<div class="error">Graph structure data not available</div>';
+        return;
+    }
+    
+    try {
+        const structure = typeof structureData === 'string' ? JSON.parse(structureData) : structureData;
+        
+        // Validate structure data
+        if (!structure.vertices || !structure.edges) {
+            container.innerHTML = '<div class="error">Invalid graph structure data</div>';
+            return;
+        }
+        
+        const nodes = [];
+        const edges = [];
+        const selfLoops = new Set(structure.self_loops || []);
+        
+        // Create nodes
+        structure.vertices.forEach(vertex => {
+            nodes.push({
+                id: vertex,
+                label: vertex.toString(),
+                color: {
+                    background: selfLoops.has(vertex) ? '#ffb347' : defaultColor,
+                    border: selfLoops.has(vertex) ? '#ff9500' : '#2B7CE9',
+                    highlight: {
+                        background: selfLoops.has(vertex) ? '#ffa726' : defaultColor,
+                        border: selfLoops.has(vertex) ? '#ff9500' : '#2B7CE9'
+                    }
+                },
+                font: { color: '#333', size: 16, face: 'Arial', bold: true },
+                borderWidth: 2,
+                shape: 'circle',
+                size: 25
+            });
+        });
+        
+        // Create edges (excluding self-loops for cleaner visualization)
+        structure.edges.forEach(edge => {
+            if (edge[0] !== edge[1]) { // Skip self-loop edges for visualization
+                edges.push({
+                    from: edge[0],
+                    to: edge[1],
+                    color: { color: '#848484', highlight: '#848484', opacity: 0.6 },
+                    width: 2,
+                    smooth: { enabled: true, type: 'continuous' }
+                });
+            }
+        });
+        
+        const data = {
+            nodes: new vis.DataSet(nodes),
+            edges: new vis.DataSet(edges)
+        };
+        
+        const options = {
+            layout: {
+                improvedLayout: true,
+                hierarchical: {
+                    enabled: false
+                }
+            },
+            physics: {
+                enabled: true,
+                stabilization: { iterations: 100 },
+                barnesHut: {
+                    gravitationalConstant: -8000,
+                    springConstant: 0.04,
+                    springLength: 95
+                }
+            },
+            interaction: {
+                dragNodes: true,
+                zoomView: true,
+                dragView: true
+            }
+        };
+        
+        // Destroy existing network if it exists
+        if (window[`${type}Network`]) {
+            window[`${type}Network`].destroy();
+        }
+        
+        // Create new network
+        window[`${type}Network`] = new vis.Network(container, data, options);
+        
+    } catch (error) {
+        console.error(`Error rendering ${type} graph:`, error);
+        container.innerHTML = `<div class="error">Error rendering graph: ${error.message}</div>`;
+    }
+}function renderGraph(type, structureData, defaultColor) {
+    const containerId = `${type}GraphNetwork`;
+    const container = document.getElementById(containerId);
+    
+    if (!container) {
+        console.error(`Container ${containerId} not found`);
+        return;
+    }
+    
+    // Check if vis is available
+    if (typeof vis === 'undefined') {
+        container.innerHTML = '<div class="error">Graph library failed to load. Please refresh the page.</div>';
+        console.error('vis.js library not loaded');
+        return;
+    }
+    
+    if (!structureData || structureData === '0') {
+        container.innerHTML = '<div class="error">Graph structure data not available</div>';
+        return;
+    }
+    
+    try {
+        const structure = typeof structureData === 'string' ? JSON.parse(structureData) : structureData;
+        
+        // Validate structure data
+        if (!structure.vertices || !structure.edges) {
+            container.innerHTML = '<div class="error">Invalid graph structure data</div>';
+            return;
+        }
+        
+        const nodes = [];
+        const edges = [];
+        const selfLoops = new Set(structure.self_loops || []);
+        
+        // Create nodes
+        structure.vertices.forEach(vertex => {
+            nodes.push({
+                id: vertex,
+                label: vertex.toString(),
+                color: {
+                    background: selfLoops.has(vertex) ? '#ffb347' : defaultColor,
+                    border: selfLoops.has(vertex) ? '#ff9500' : '#2B7CE9',
+                    highlight: {
+                        background: selfLoops.has(vertex) ? '#ffa726' : defaultColor,
+                        border: selfLoops.has(vertex) ? '#ff9500' : '#2B7CE9'
+                    }
+                },
+                font: { color: '#333', size: 16, face: 'Arial', bold: true },
+                borderWidth: 2,
+                shape: 'circle',
+                size: 25
+            });
+        });
+        
+        // Create edges (excluding self-loops for cleaner visualization)
+        structure.edges.forEach(edge => {
+            if (edge[0] !== edge[1]) { // Skip self-loop edges for visualization
+                edges.push({
+                    from: edge[0],
+                    to: edge[1],
+                    color: { color: '#848484', highlight: '#848484', opacity: 0.6 },
+                    width: 2,
+                    smooth: { enabled: true, type: 'continuous' }
+                });
+            }
+        });
+        
+        const data = {
+            nodes: new vis.DataSet(nodes),
+            edges: new vis.DataSet(edges)
+        };
+        
+        const options = {
+            layout: {
+                improvedLayout: true,
+                hierarchical: {
+                    enabled: false
+                }
+            },
+            physics: {
+                enabled: true,
+                stabilization: { iterations: 100 },
+                barnesHut: {
+                    gravitationalConstant: -8000,
+                    springConstant: 0.04,
+                    springLength: 95
+                }
+            },
+            interaction: {
+                dragNodes: true,
+                zoomView: true,
+                dragView: true
+            }
+        };
+        
+        // Destroy existing network if it exists
+        if (window[`${type}Network`]) {
+            window[`${type}Network`].destroy();
+        }
+        
+        // Create new network
+        window[`${type}Network`] = new vis.Network(container, data, options);
+        
+    } catch (error) {
+        console.error(`Error rendering ${type} graph:`, error);
+        container.innerHTML = `<div class="error">Error rendering graph: ${error.message}</div>`;
+    }
+}function renderGraph(type, structureData, defaultColor) {
+    const containerId = `${type}GraphNetwork`;
+    const container = document.getElementById(containerId);
+    
+    if (!container) {
+        console.error(`Container ${containerId} not found`);
+        return;
+    }
+    
+    // Check if vis is available
+    if (typeof vis === 'undefined') {
+        container.innerHTML = '<div class="error">Graph library failed to load. Please refresh the page.</div>';
+        console.error('vis.js library not loaded');
+        return;
+    }
+    
+    if (!structureData || structureData === '0') {
+        container.innerHTML = '<div class="error">Graph structure data not available</div>';
+        return;
+    }
+    
+    try {
+        const structure = typeof structureData === 'string' ? JSON.parse(structureData) : structureData;
+        
+        // Validate structure data
+        if (!structure.vertices || !structure.edges) {
+            container.innerHTML = '<div class="error">Invalid graph structure data</div>';
+            return;
+        }
+        
+        const nodes = [];
+        const edges = [];
+        const selfLoops = new Set(structure.self_loops || []);
+        
+        // Create nodes
+        structure.vertices.forEach(vertex => {
+            nodes.push({
+                id: vertex,
+                label: vertex.toString(),
+                color: {
+                    background: selfLoops.has(vertex) ? '#ffb347' : defaultColor,
+                    border: selfLoops.has(vertex) ? '#ff9500' : '#2B7CE9',
+                    highlight: {
+                        background: selfLoops.has(vertex) ? '#ffa726' : defaultColor,
+                        border: selfLoops.has(vertex) ? '#ff9500' : '#2B7CE9'
+                    }
+                },
+                font: { color: '#333', size: 16, face: 'Arial', bold: true },
+                borderWidth: 2,
+                shape: 'circle',
+                size: 25
+            });
+        });
+        
+        // Create edges (excluding self-loops for cleaner visualization)
+        structure.edges.forEach(edge => {
+            if (edge[0] !== edge[1]) { // Skip self-loop edges for visualization
+                edges.push({
+                    from: edge[0],
+                    to: edge[1],
+                    color: { color: '#848484', highlight: '#848484', opacity: 0.6 },
+                    width: 2,
+                    smooth: { enabled: true, type: 'continuous' }
+                });
+            }
+        });
+        
+        const data = {
+            nodes: new vis.DataSet(nodes),
+            edges: new vis.DataSet(edges)
+        };
+        
+        const options = {
+            layout: {
+                improvedLayout: true,
+                hierarchical: {
+                    enabled: false
+                }
+            },
+            physics: {
+                enabled: true,
+                stabilization: { iterations: 100 },
+                barnesHut: {
+                    gravitationalConstant: -8000,
+                    springConstant: 0.04,
+                    springLength: 95
+                }
+            },
+            interaction: {
+                dragNodes: true,
+                zoomView: true,
+                dragView: true
+            }
+        };
+        
+        // Destroy existing network if it exists
+        if (window[`${type}Network`]) {
+            window[`${type}Network`].destroy();
+        }
+        
+        // Create new network
+        window[`${type}Network`] = new vis.Network(container, data, options);
+        
+    } catch (error) {
+        console.error(`Error rendering ${type} graph:`, error);
+        container.innerHTML = `<div class="error">Error rendering graph: ${error.message}</div>`;
+    }
+}
+
+		function renderGraph(type, structureData, defaultColor) {
+			const containerId = `${type}GraphNetwork`;
+			const container = document.getElementById(containerId);
+			
+			if (!container) {
+				console.error(`Container ${containerId} not found`);
+				return;
+			}
+			
+			// Check if vis is available
+			if (typeof vis === 'undefined') {
+				container.innerHTML = '<div class="error">Graph library failed to load. Please refresh the page.</div>';
+				console.error('vis.js library not loaded');
+				return;
+			}
+			
+			if (!structureData || structureData === '0') {
+				container.innerHTML = '<div class="error">Graph structure data not available</div>';
+				return;
+			}
+			
+			try {
+				const structure = typeof structureData === 'string' ? JSON.parse(structureData) : structureData;
+				
+				// Validate structure data
+				if (!structure.vertices || !structure.edges) {
+					container.innerHTML = '<div class="error">Invalid graph structure data</div>';
+					return;
+				}
+				
+				const nodes = [];
+				const edges = [];
+				const selfLoops = new Set(structure.self_loops || []);
+				
+				// Create nodes
+				structure.vertices.forEach(vertex => {
+					nodes.push({
+						id: vertex,
+						label: vertex.toString(),
+						color: {
+							background: selfLoops.has(vertex) ? '#ffb347' : defaultColor,
+							border: selfLoops.has(vertex) ? '#ff9500' : '#2B7CE9',
+							highlight: {
+								background: selfLoops.has(vertex) ? '#ffa726' : defaultColor,
+								border: selfLoops.has(vertex) ? '#ff9500' : '#2B7CE9'
+							}
+						},
+						font: { color: '#333', size: 16, face: 'Arial', bold: true },
+						borderWidth: 2,
+						shape: 'circle',
+						size: 25
+					});
+				});
+				
+				// Create edges (excluding self-loops for cleaner visualization)
+				structure.edges.forEach(edge => {
+					if (edge[0] !== edge[1]) { // Skip self-loop edges for visualization
+						edges.push({
+							from: edge[0],
+							to: edge[1],
+							color: { color: '#848484', highlight: '#848484', opacity: 0.6 },
+							width: 2,
+							smooth: { enabled: true, type: 'continuous' }
+						});
+					}
+				});
+				
+				const data = {
+					nodes: new vis.DataSet(nodes),
+					edges: new vis.DataSet(edges)
+				};
+				
+				const options = {
+					layout: {
+						improvedLayout: true,
+						hierarchical: {
+							enabled: false
+						}
+					},
+					physics: {
+						enabled: true,
+						stabilization: { iterations: 100 },
+						barnesHut: {
+							gravitationalConstant: -8000,
+							springConstant: 0.04,
+							springLength: 95
+						}
+					},
+					interaction: {
+						dragNodes: true,
+						zoomView: true,
+						dragView: true
+					}
+				};
+				
+				// Destroy existing network if it exists
+				if (window[`${type}Network`]) {
+					window[`${type}Network`].destroy();
+				}
+				
+				// Create new network
+				window[`${type}Network`] = new vis.Network(container, data, options);
+				
+			} catch (error) {
+				console.error(`Error rendering ${type} graph:`, error);
+				container.innerHTML = `<div class="error">Error rendering graph: ${error.message}</div>`;
+			}
+		}
+        
+        function switchGraphTab(tab) {
+            // Update tabs
+            document.querySelectorAll('.graph-tab').forEach(tabElement => {
+                tabElement.classList.remove('active');
+            });
+            document.querySelector(`.graph-tab[onclick="switchGraphTab('${tab}')"]`).classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.graph-tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tab}GraphTab`).classList.add('active');
+        }
+        
+        function closeGraphModal() {
+            document.getElementById('graphModal').style.display = 'none';
+            // Clean up networks
+            if (window.zeroNetwork) {
+                window.zeroNetwork.destroy();
+            }
+            if (window.exactNetwork) {
+                window.exactNetwork.destroy();
+            }
+        }
+        
+        function resetFilters() {
+            document.getElementById('startN').value = 1;
+            document.getElementById('endN').value = 100;
+            document.getElementById('components').value = '';
+            document.getElementById('componentType').value = '';
+            document.getElementById('exactMatch').checked = false;
+        }
+        
+        function showError(message) {
+            const resultsBody = document.getElementById('resultsBody');
+            resultsBody.innerHTML = `
+                <tr>
+                    <td colspan="9">
+                        <div class="error">${message}</div>
+                    </td>
+                </tr>
+            `;
+            document.getElementById('resultCount').textContent = 'Error loading entries';
+        }
+        
+        // Load initial entries when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            checkServerConnection();
+            loadEntries();
+        });
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', (event) => {
+            const modal = document.getElementById('graphModal');
+            if (event.target === modal) {
+                closeGraphModal();
+            }
+        });
+    </script>
+</body>
+</html>
